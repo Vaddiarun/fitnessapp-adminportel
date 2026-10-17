@@ -89,32 +89,56 @@ const Back = () => (
   </Link>
 );
 
-/** Last 14 days: how many planned meals they ticked each day. */
+/** Last 14 days: how many planned meals they ate, skipped or swapped for a cheat meal each day. */
 function Adherence({ detail }: { detail: MemberDetail }) {
   const today = new Date();
   const dates = Array.from({ length: 14 }, (_, i) => {
     const d = new Date(today); d.setDate(today.getDate() - 13 + i);
     return { iso: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`, weekday: d.getDay() };
   });
-  const ticked = (iso: string) => detail.logs.meals.filter((m) => m.date === iso).length;
+  const on = (iso: string, status: 'eaten' | 'skipped' | 'cheated') =>
+    detail.logs.meals.filter((m) => m.date === iso && (m.status ?? 'eaten') === status).length;
+  const ticked = (iso: string) => on(iso, 'eaten');
   const planned = (weekday: number) => detail.plan?.meals[weekday].length ?? 0;
   const rate = Math.round((dates.reduce((s, d) => s + Math.min(ticked(d.iso), planned(d.weekday)), 0) /
     Math.max(1, dates.reduce((s, d) => s + planned(d.weekday), 0))) * 100);
+  const totals = { skipped: dates.reduce((s, d) => s + on(d.iso, 'skipped'), 0), cheated: dates.reduce((s, d) => s + on(d.iso, 'cheated'), 0) };
+  const cheats = detail.logs.meals.filter((m) => m.status === 'cheated').slice(-5).reverse();
+  const mealName = (m: { date: string; slot_index: number }) =>
+    detail.plan?.meals[new Date(m.date + 'T00:00:00').getDay()]?.[m.slot_index]?.name ?? `Meal ${m.slot_index + 1}`;
 
   return (
     <Card className="grid content-start gap-3">
-      <div className="flex items-baseline justify-between"><Eyebrow>Meals ticked · 14 days</Eyebrow><span className="font-display text-3xl">{rate}%</span></div>
+      <div className="flex items-baseline justify-between"><Eyebrow>Meals eaten · 14 days</Eyebrow><span className="font-display text-3xl">{rate}%</span></div>
+      <div className="flex flex-wrap gap-2 text-xs font-bold">
+        <span className="rounded-full bg-sunk px-2.5 py-1">Skipped {totals.skipped}</span>
+        <span className="rounded-full bg-accent-soft px-2.5 py-1 text-accent">Cheated {totals.cheated}</span>
+      </div>
       <div className="grid grid-cols-7 gap-1.5">
         {dates.map((d) => {
           const t = ticked(d.iso), p = planned(d.weekday), full = p > 0 && t >= p;
+          const sk = on(d.iso, 'skipped'), ch = on(d.iso, 'cheated');
           return (
-            <div key={d.iso} title={`${d.iso}: ${t}/${p} meals`} className={`grid place-items-center rounded-lg py-1.5 text-[11px] font-bold ${full ? 'bg-good text-white' : t ? 'bg-good-soft text-good' : 'bg-sunk text-muted'}`}>
+            <div key={d.iso} title={`${d.iso}: ${t}/${p} eaten · ${sk} skipped · ${ch} cheated`}
+              className={`relative grid place-items-center rounded-lg py-1.5 text-[11px] font-bold ${full ? 'bg-good text-white' : t ? 'bg-good-soft text-good' : 'bg-sunk text-muted'}`}>
               <span>{DAYS[d.weekday][0]}</span><span>{t}/{p}</span>
+              {ch ? <span className="absolute -right-1 -top-1 h-2.5 w-2.5 rounded-full bg-accent ring-2 ring-surface" /> : null}
             </div>
           );
         })}
       </div>
-      <p className="text-xs text-muted">Members tick meals on their Today screen. Green means every planned meal was ticked.</p>
+      <p className="text-xs text-muted">Members log each meal on their Today screen as eaten, skipped or cheated. Green means every planned meal was eaten; an orange dot marks a cheat meal.</p>
+      {cheats.length ? (
+        <div className="grid gap-1.5 border-t border-line pt-2">
+          <Eyebrow>Recent cheat meals</Eyebrow>
+          {cheats.map((m) => (
+            <div key={`${m.date}-${m.slot_index}`} className="flex items-baseline justify-between gap-2 text-sm">
+              <span className="min-w-0 truncate"><span className="font-bold">{mealName(m)}</span> <span className="text-muted">· {shortDate(m.date)}</span>{m.note ? <> · {m.note}</> : null}</span>
+              <span className="shrink-0 text-muted">{m.kcal ?? 0} kcal{m.protein ? ` · ${m.protein} g` : ''}</span>
+            </div>
+          ))}
+        </div>
+      ) : null}
     </Card>
   );
 }

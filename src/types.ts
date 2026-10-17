@@ -37,7 +37,8 @@ export interface MemberDetail {
   plan: { nutrition: Nutrition; meals: PlanMeal[][]; coach: { note: string; updatedAt: string } | null; nutritionOverride?: Targets } | null;
   autoNutrition: Nutrition | null;
   logs: {
-    meals: { date: string; slot_index: number }[];
+    /** How each logged meal went; older rows have no status and count as eaten. */
+    meals: { date: string; slot_index: number; status?: 'eaten' | 'skipped' | 'cheated'; note?: string | null; kcal?: number | null; protein?: number | null }[];
     water: { date: string; glasses: number }[];
     weights: { date: string; kg: number }[];
     workouts: { id: number; date: string; name: string; mins: number; volume: number; rpe: number | null }[];
