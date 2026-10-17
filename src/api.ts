@@ -2,7 +2,7 @@ import type { Cuisine, Food, MemberDetail, MemberSummary, Stats, Targets } from 
 
 /** Backend base URL. Accepts it with or without the trailing /api (e.g. a bare Render URL). */
 export const API_URL = (() => {
-  const raw = (import.meta.env.VITE_API_URL || 'http://localhost:4000/api').replace(/\/+$/, '');
+  const raw = (import.meta.env.VITE_API_URL || 'http://16.176.190.24/api').replace(/\/+$/, '');
   return raw.endsWith('/api') ? raw : `${raw}/api`;
 })();
 const TOKEN_KEY = 'ai-fitness-admin.token';

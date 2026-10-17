@@ -6,7 +6,7 @@ Web portal for coaches. Find a member by their member number (shown in the app u
 
 ```bash
 npm install
-cp .env.example .env      # VITE_API_URL points at the backend, default http://localhost:4000/api
+cp .env.example .env      # VITE_API_URL points at the backend: http://16.176.190.24/api (AWS)
 npm run dev               # http://localhost:5174
 ```
 
