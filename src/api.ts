@@ -3,7 +3,13 @@ import type { Cuisine, Food, MemberDetail, MemberSummary, Stats, Targets } from 
 /** Backend base URL. Accepts it with or without the trailing /api (e.g. a bare Render URL). */
 export const API_URL = (() => {
   const raw = (import.meta.env.VITE_API_URL || 'http://16.176.190.24/api').replace(/\/+$/, '');
-  return raw.endsWith('/api') ? raw : `${raw}/api`;
+  const url = raw.endsWith('/api') ? raw : `${raw}/api`;
+  // A portal opened over https:// can't call an http:// API (the browser blocks "mixed content").
+  // The same AWS server also answers over HTTPS at its sslip.io name, so switch to that there.
+  if (typeof window !== 'undefined' && window.location.protocol === 'https:' && url.startsWith('http://16.176.190.24')) {
+    return url.replace('http://16.176.190.24', 'https://16-176-190-24.sslip.io');
+  }
+  return url;
 })();
 const TOKEN_KEY = 'ai-fitness-admin.token';
 
@@ -31,7 +37,8 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
       body: body === undefined ? undefined : JSON.stringify(body),
     });
   } catch {
-    throw new ApiError(0, `Can't reach the server at ${API_URL}. Is the backend running?`);
+    console.error('[api] request blocked or failed', method, API_URL + path);
+    throw new ApiError(0, `Can't reach the server at ${API_URL}. Check your internet connection, and turn off ad-blocking or privacy extensions for this page.`);
   }
   const data = res.status === 204 ? null : await res.json().catch(() => ({}));
   if (!res.ok) {
