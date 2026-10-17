@@ -6,8 +6,12 @@ import type { Cuisine, DraftMeal, Food, MemberDetail, PlanMeal, Slot, Targets } 
 import { Button, Card, ErrorBox, Eyebrow, Input, Pill, Select } from '../ui';
 
 type TargetKey = keyof Targets;
+/**
+ * Targets the coach can set. Calories and protein aren't here on purpose: in the member's app those rings
+ * follow the meals of each day, so eating the whole plan fills them exactly.
+ */
 const TARGET_FIELDS: [TargetKey, string, string][] = [
-  ['kcal', 'Calories', 'kcal'], ['protein', 'Protein', 'g'], ['carbs', 'Carbs', 'g'], ['fat', 'Fat', 'g'], ['waterGlasses', 'Water', 'glasses'],
+  ['carbs', 'Carbs', 'g'], ['fat', 'Fat', 'g'], ['waterGlasses', 'Water', 'glasses'],
 ];
 
 let nextKey = 0;
@@ -81,11 +85,10 @@ export default function DietEditor({ detail, foods, cuisines, onSaved }: {
     return list.sort((a, b) => Number(b.c === profile.cuisine) - Number(a.c === profile.cuisine) || a.n.localeCompare(b.n));
   }, [foods, fitsOnly, profile]);
 
-  const target = (k: TargetKey) => (targets[k] ? Number(targets[k]) : auto[k]);
   const dayTotals = (list: DraftMeal[]) => list.reduce((t, m) => { const x = totalsOf(m, byId); return { kcal: t.kcal + x.kcal, protein: t.protein + x.protein }; }, { kcal: 0, protein: 0 });
   const status = (list: DraftMeal[]) => {
     const t = dayTotals(list);
-    return { ...t, proteinOk: t.protein >= target('protein') * 0.95, kcalOk: Math.abs(t.kcal - target('kcal')) <= target('kcal') * 0.1 };
+    return { ...t, proteinOk: t.protein >= auto.protein * 0.95, kcalOk: Math.abs(t.kcal - auto.kcal) <= auto.kcal * 0.1 };
   };
 
   const edit = (d: number, k: string, patch: Partial<DraftMeal>) =>
@@ -161,8 +164,10 @@ export default function DietEditor({ detail, foods, cuisines, onSaved }: {
 
       {/* Targets: empty means "use the automatic number" shown as the placeholder. */}
       <div className="grid gap-2">
-        <Eyebrow>Daily targets <span className="normal-case tracking-normal">· leave empty to use the calculated value</span></Eyebrow>
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
+        <Eyebrow>Other daily targets <span className="normal-case tracking-normal">· leave empty to use the calculated value</span></Eyebrow>
+        <p className="text-xs text-muted">Calories and protein in the member’s app follow the meals you set for each day, so the rings fill exactly when they eat the whole plan.
+          Recommended for them: <span className="font-bold text-ink">{auto.kcal.toLocaleString()} kcal · {auto.protein} g protein</span> a day.</p>
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
           {TARGET_FIELDS.map(([k, label, unit]) => (
             <Input key={k} label={`${label} (${unit})`} type="number" inputMode="numeric" value={targets[k]} placeholder={`${auto[k]} auto`}
               onChange={(e) => setTargets((t) => ({ ...t, [k]: e.target.value }))} />
@@ -195,10 +200,10 @@ export default function DietEditor({ detail, foods, cuisines, onSaved }: {
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-bg px-4 py-3">
         <div className="flex flex-wrap items-center gap-3 text-sm">
           <span className="font-display text-2xl uppercase">{DAYS_LONG[day]}</span>
-          <Pill tone={s.kcalOk ? 'good' : 'warn'}>{s.kcal} / {target('kcal')} kcal</Pill>
-          <Pill tone={s.proteinOk ? 'good' : 'warn'}>{s.protein} / {target('protein')} g protein</Pill>
-          {s.kcalOk && s.proteinOk ? <span className="inline-flex items-center gap-1 text-xs font-bold text-good"><CheckCircle2 className="h-4 w-4" />On target</span>
-            : <span className="inline-flex items-center gap-1 text-xs font-bold text-warn"><TriangleAlert className="h-4 w-4" />{!s.proteinOk ? 'Protein short' : 'Calories off by more than 10%'}</span>}
+          <Pill tone={s.kcalOk ? 'good' : 'warn'}>{s.kcal.toLocaleString()} kcal <span className="font-normal opacity-70">· rec. {auto.kcal.toLocaleString()}</span></Pill>
+          <Pill tone={s.proteinOk ? 'good' : 'warn'}>{s.protein} g protein <span className="font-normal opacity-70">· rec. {auto.protein}</span></Pill>
+          {s.kcalOk && s.proteinOk ? <span className="inline-flex items-center gap-1 text-xs font-bold text-good"><CheckCircle2 className="h-4 w-4" />Matches what’s recommended</span>
+            : <span className="inline-flex items-center gap-1 text-xs font-bold text-warn"><TriangleAlert className="h-4 w-4" />{!s.proteinOk ? 'Less protein than recommended' : 'Calories differ from recommended by over 10%'}</span>}
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <label className="flex items-center gap-2 text-xs font-bold text-muted">
