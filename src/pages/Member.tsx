@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { api } from '../api';
 import DietEditor from '../components/DietEditor';
+import MemberTrends from '../components/MemberTrends';
 import { DAYS, DIET_NAMES, GOAL_NAMES, memberNo, shortDate } from '../format';
 import type { Cuisine, Food, MemberDetail } from '../types';
 import { Card, ErrorBox, Eyebrow, Pill, Spinner, Title } from '../ui';
@@ -75,6 +76,8 @@ export default function Member() {
               ) : null}
             </Card>
           </div>
+
+          <MemberTrends memberId={user.id} unit={profile.units === 'imperial' ? 'lb' : 'kg'} goalKg={profile.targetWeight ?? null} />
 
           <DietEditor key={plan.coach?.updatedAt ?? 'auto'} detail={detail} foods={foods} cuisines={cuisines} onSaved={load} />
         </>

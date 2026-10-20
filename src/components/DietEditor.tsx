@@ -2,6 +2,7 @@ import { CheckCircle2, Copy, CopyPlus, Plus, RotateCcw, Save, Trash2, TriangleAl
 import { useEffect, useMemo, useState } from 'react';
 import { api, type DietMealInput } from '../api';
 import { DAYS, DAYS_LONG, DIET_NAMES, DIET_RANK, SLOT_NAMES, WEEK_ORDER, toHHMM } from '../format';
+import { servingText } from '../serving';
 import type { Cuisine, DraftMeal, Food, MemberDetail, PlanMeal, Slot, Targets } from '../types';
 import { Button, Card, ErrorBox, Eyebrow, Input, Pill, Select } from '../ui';
 
@@ -114,6 +115,7 @@ export default function DietEditor({ detail, foods, cuisines, onSaved }: {
         if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(m.time)) return `${DAYS_LONG[d]}: “${m.name}” needs a time like 08:30.`;
         if (m.source === 'catalog' && !m.foodId) return `${DAYS_LONG[d]}: pick a dish for “${m.name}”.`;
         if (m.source === 'custom' && (!m.custom.n.trim() || !(m.custom.k > 0))) return `${DAYS_LONG[d]}: “${m.name}” needs a dish name and calories.`;
+        if (m.source === 'custom' && !m.custom.q.trim()) return `${DAYS_LONG[d]}: “${m.name}” needs a quantity, e.g. 3 idlis + 1 bowl sambar.`;
       }
     }
     return '';
@@ -258,15 +260,17 @@ export default function DietEditor({ detail, foods, cuisines, onSaved }: {
                   <Input label="Portion (×)" type="number" step="0.25" min="0.25" max="5" value={m.portion}
                     onChange={(e) => edit(day, m.key, { portion: Number(e.target.value) || 1 })} />
                   <Totals {...t} />
+                  {f ? <Serving text={servingText(f.q, m.portion)} /> : null}
                 </div>
               ) : (
                 <div className="grid gap-3 md:grid-cols-[1fr_150px_100px_100px_100px_auto]">
                   <Input label="Dish" value={m.custom.n} maxLength={120} placeholder="e.g. Paneer bhurji with 2 rotis" onChange={(e) => editCustom(day, m.key, { n: e.target.value })} />
-                  <Input label="Quantity" value={m.custom.q} maxLength={80} placeholder="1 plate" onChange={(e) => editCustom(day, m.key, { q: e.target.value })} />
+                  <Input label="Quantity (required)" value={m.custom.q} maxLength={80} placeholder="3 idlis + 1 bowl sambar" onChange={(e) => editCustom(day, m.key, { q: e.target.value })} />
                   <Input label="kcal" type="number" min="0" value={m.custom.k || ''} onChange={(e) => editCustom(day, m.key, { k: Number(e.target.value) })} />
                   <Input label="Protein (g)" type="number" min="0" value={m.custom.p || ''} onChange={(e) => editCustom(day, m.key, { p: Number(e.target.value) })} />
                   <Input label="Portion (×)" type="number" step="0.25" min="0.25" max="5" value={m.portion} onChange={(e) => edit(day, m.key, { portion: Number(e.target.value) || 1 })} />
                   <Totals {...t} />
+                  {m.custom.q.trim() ? <Serving text={servingText(m.custom.q, m.portion)} /> : null}
                 </div>
               )}
               {unsafe ? <p className="flex items-center gap-1.5 text-xs font-bold text-warn"><TriangleAlert className="h-4 w-4" />{clashOf(f!)}</p> : null}
@@ -290,4 +294,9 @@ const Totals = ({ kcal, protein }: { kcal: number; protein: number }) => (
     <span><span className="font-display text-2xl">{kcal}</span> <span className="text-muted">kcal</span></span>
     <span><span className="font-display text-2xl">{protein}</span> <span className="text-muted">g P</span></span>
   </div>
+);
+
+/** What the member will see as the amount to eat, after the portion is applied. */
+const Serving = ({ text }: { text: string }) => (
+  <p className="text-sm md:col-span-full">Member sees: <span className="font-bold">{text}</span></p>
 );

@@ -1,4 +1,4 @@
-import type { Cuisine, Food, MemberDetail, MemberSummary, Stats, Targets } from './types';
+import type { Cuisine, Food, Insights, MemberDetail, MemberSummary, Stats, Targets } from './types';
 
 /** Backend base URL. Accepts it with or without the trailing /api (e.g. a bare Render URL). */
 export const API_URL = (() => {
@@ -62,6 +62,8 @@ export const api = {
   stats: () => request<Stats>('GET', '/admin/stats'),
   members: (q = '') => request<{ users: MemberSummary[] }>('GET', `/admin/users${q ? `?q=${encodeURIComponent(q)}` : ''}`),
   member: (id: number) => request<MemberDetail>('GET', `/admin/users/${id}`),
+  insights: (id: number, date: string, range: '30' | '90' | '365') =>
+    request<Insights>('GET', `/admin/users/${id}/insights?date=${date}&range=${range}`),
   foods: () => request<{ foods: Food[]; cuisines: Cuisine[] }>('GET', '/admin/foods'),
   saveDiet: (id: number, days: DietMealInput[][], targets: Targets | undefined, note: string) =>
     request<{ plan: MemberDetail['plan'] }>('PUT', `/admin/users/${id}/diet`, { days, targets, note }),

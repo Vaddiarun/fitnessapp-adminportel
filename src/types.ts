@@ -56,3 +56,15 @@ export interface DraftMeal {
   portion: number;
   custom: { n: string; q: string; k: number; p: number };
 }
+
+/** Chart data for one member (GET /admin/users/:id/insights). */
+export interface Insights {
+  range: { from: string; to: string; days: number };
+  strength: { id: string; name: string; metric: 'weight' | 'reps'; sessions: number; points: { date: string; weight: number; reps: number; sets: number }[] }[];
+  load: { month: string; volume: number; sessions: number; mins: number }[];
+  nutrition: { date: string; kcal: number; protein: number; kcalTarget: number; proteinTarget: number; logged: boolean }[];
+  adherence: { week: string; planned: number; eaten: number; cheated: number; skipped: number; notLogged: number }[];
+  training: { week: string; planned: number; done: number; mins: number }[];
+  bodyWeight: { date: string; kg: number }[];
+  water: { date: string; glasses: number; target: number }[];
+}
